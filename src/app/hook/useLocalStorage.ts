@@ -5,6 +5,7 @@ export enum ILocalStorageItems {
   TOTAL_DATA = "TOTAL_DATA",
   CURRENT_PAGE = "CURRENT_PAGE",
   FILTER = "FILTER",
+  PINNED = "PINNED",
 }
 
 function useLocalStorage<T>(
