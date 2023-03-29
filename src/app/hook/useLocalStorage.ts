@@ -6,6 +6,7 @@ export enum ILocalStorageItems {
   CURRENT_PAGE = "CURRENT_PAGE",
   FILTER = "FILTER",
   PINNED = "PINNED",
+  SELECTED_CONTACTS = "SELECTED_CONTACTS",
 }
 
 function useLocalStorage<T>(

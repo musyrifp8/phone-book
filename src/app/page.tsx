@@ -8,7 +8,7 @@ import { ColumnsType } from "antd/es/table";
 import useLocalStorage, { ILocalStorageItems } from "./hook/useLocalStorage";
 import { StarFilled, StarOutlined, UserOutlined } from "@ant-design/icons";
 
-const { CONTACTS, CURRENT_PAGE, TOTAL_DATA, FILTER, PINNED } =
+const { CONTACTS, CURRENT_PAGE, TOTAL_DATA, FILTER, PINNED, SELECTED_CONTACTS } =
   ILocalStorageItems;
 
 interface Contact {
@@ -19,7 +19,12 @@ interface Contact {
   phones: {
     number: string;
   }[];
+
+  //frontend only
   isFavorite: boolean;
+  color: string
+
+  
 }
 
 interface IPagination {
@@ -36,14 +41,14 @@ export default function Home() {
   const [totalData, setTotalData] = useLocalStorage<number>(TOTAL_DATA, 0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filter, setFilter] = useLocalStorage<string>(FILTER, "");
-  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
-  const [pinned, setPinned] = useState<Contact[]>([]);
+  const [selectedContacts, setSelectedContacts] = useLocalStorage<Contact[]>(SELECTED_CONTACTS ,[]);
+  const [pinned, setPinned] = useLocalStorage<Contact[]>(PINNED, []);
 
   const columns: ColumnsType<any> = [
     {
       key: 'avatar',
-      render: () => {
-        return <Avatar size={'default'} style={{backgroundColor: `#${Math.floor(Math.random()*16777215).toString(16)}`}} icon={<UserOutlined  />} />
+      render: (_, record: Contact) => {
+        return <Avatar size={'default'} style={{backgroundColor: record.color}} icon={<UserOutlined  />} />
       }
   },
     {
@@ -72,13 +77,12 @@ export default function Home() {
     },
   ];
 
-  async function getData(offset: number): Promise<{
+  async function getData(): Promise<{
     contacts: Contact[];
     totalData: number;
   }> {
     const contacts = await client.query({
       variables: {
-        offset,
         where: {
           _or: [
             { first_name: { _like: `%${filter}%` } },
@@ -120,22 +124,38 @@ export default function Home() {
   useEffect(() => {
     const init = async () => {
       try {
+        const data = await getData();
         if (!!!contacts.length) {
-          const data = await getData(pagination.offset);
+          
           const tempContact = data.contacts.map((item) => ({
             ...item,
             isFavorite: false,
+            color: `#${Math.floor(Math.random()*16777215).toString(16)}`
           }));
           setContacts(tempContact);
           setSelectedContacts(tempContact);
           setTotalData(tempContact.length);
         } else {
-          const tempSelectedContact = contacts.filter(
-            (item) => !item.isFavorite
-          );
-          setSelectedContacts([...tempSelectedContact]);
-          setPinned([...contacts.filter((item) => item.isFavorite)]);
-          setTotalData(tempSelectedContact.length);
+          // const tempSelectedContact = contacts.filter(
+          //   (item) => !item.isFavorite
+          // );
+          // setSelectedContacts([...tempSelectedContact]);
+          // setPinned([...contacts.filter((item) => item.isFavorite)]);
+          // setTotalData(tempSelectedContact.length);
+
+          let tempContact = [...pinned]
+          let tempSelected: Contact[] = []
+
+          data.contacts.forEach((item) => {
+            const isPinned = pinned.find(pinned => pinned.id === item.id)
+            if (!isPinned) {
+              tempSelected.push({ ...item, isFavorite: false, color: `#${Math.floor(Math.random()*16777215).toString(16)}` })
+              tempContact = [...tempSelected]
+            }
+          })
+
+          setContacts([...tempContact])
+          setSelectedContacts([...tempSelected])
           
         }
       } catch (error) {
@@ -146,7 +166,7 @@ export default function Home() {
     };
 
     init();
-  }, []);
+  }, [filter]);
 
   function onClickStar(record: Contact, isFavorite: boolean): void {
     let tempSelected = selectedContacts;
