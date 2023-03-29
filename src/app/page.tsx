@@ -175,9 +175,6 @@ export default function Home() {
 
     setContacts([...tempContacts]);
     setTotalData(tempSelected.length);
-
-    console.log(pinned)
-    console.log(selectedContacts)
   }
 
   return (
@@ -194,7 +191,7 @@ export default function Home() {
         </div>
       ) : (
         <div>
-          {!!pinned.length && (
+          {!!pinned.length && pagination.currentPage === 1 && (
             <Table
               rowKey={(record) => record.id}
               columns={columns}
@@ -234,7 +231,7 @@ export default function Home() {
             columns={columns}
             showHeader={false}
             pagination={false}
-            dataSource={selectedContacts}
+              dataSource={selectedContacts.slice(pagination.offset, 10 + pagination.offset)}
             expandable={{
               expandedRowRender: (record: Contact) => (
                 <div style={{ display: "flex" }}>
