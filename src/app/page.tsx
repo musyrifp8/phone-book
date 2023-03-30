@@ -112,12 +112,13 @@ export default function Home() {
   }
 
   async function onPageChange(page: number): Promise<void> {
-    let tempOffset = pagination.offset;
-    if (pagination.currentPage > page) {
-      tempOffset = tempOffset - 10;
-    } else {
-      tempOffset = tempOffset + 10;
-    }
+    // let tempOffset = pagination.offset;
+    // if (pagination.currentPage > page) {
+    //   tempOffset = tempOffset - 10;
+    // } else {
+    //   tempOffset = tempOffset + 10;
+    // }
+    let tempOffset = page * 10 -10
     setPagination({ currentPage: page, offset: tempOffset });
   }
 
@@ -136,12 +137,6 @@ export default function Home() {
           setSelectedContacts(tempContact);
           setTotalData(tempContact.length);
         } else {
-          // const tempSelectedContact = contacts.filter(
-          //   (item) => !item.isFavorite
-          // );
-          // setSelectedContacts([...tempSelectedContact]);
-          // setPinned([...contacts.filter((item) => item.isFavorite)]);
-          // setTotalData(tempSelectedContact.length);
 
           let tempContact = [...pinned]
           let tempSelected: Contact[] = []
@@ -156,7 +151,7 @@ export default function Home() {
 
           setContacts([...tempContact])
           setSelectedContacts([...tempSelected])
-          
+          setTotalData(tempSelected.length);
         }
       } catch (error) {
         console.log(error);
@@ -202,7 +197,10 @@ export default function Home() {
       <Input.Search
         placeholder="Search by name"
         value={filter}
-        onChange={(e) => setFilter(e.target.value)}
+        onChange={(e) => {
+          setPagination({currentPage: 1, offset: 0})
+          setFilter(e.target.value)}
+        }
         loading={isLoading}
       />
       {isLoading ? (
