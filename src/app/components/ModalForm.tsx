@@ -2,39 +2,108 @@ import { Button, Col, Form, Input, Modal, Row, notification } from "antd";
 import { Contact } from "../page";
 import { CloseOutlined, PlusCircleOutlined } from "@ant-design/icons";
 import client from "../graphql/apollo-client";
-import { ADD_CONTACT } from "../graphql/query";
+import {
+  ADD_CONTACT,
+  EDIT_CONTACT,
+  GET_TOTAL_CONTACTS,
+} from "../graphql/query";
+import { RuleObject } from "antd/es/form";
 
 interface IModalFormProps {
-  record?: Contact;
+  record: Contact | null;
   visible: boolean;
-    setModalData: (value: { record: Contact | null; isOpen: boolean }) => void;
-    fetchData: () => void
+  setModalData: (value: { record: Contact | null; isOpen: boolean }) => void;
+  fetchData: () => void;
 }
 
 export const ModalForm = ({
   record,
   visible,
-    setModalData,
-  fetchData
+  setModalData,
+  fetchData,
 }: IModalFormProps) => {
   const [form] = Form.useForm();
 
+  if (record) {
+    form.setFieldsValue({
+      firstName: record.first_name,
+      lastName: record.last_name,
+      phones: record.phones.map((item) => ({ phone: item.number })),
+    });
+  }
+
+  const validateNumber = (_: RuleObject, value: string): Promise<void> => {
+    const regex = /^[0-9]*$/;
+    if (!regex.test(value)) {
+      return Promise.reject('Please enter only numbers');
+    }
+    return Promise.resolve();
+  };
+
+  const validateInputName = (_: RuleObject, value: string): Promise<void> => {
+    const regex = /^[a-zA-Z0-9]*$/;
+    if (!regex.test(value)) {
+      return Promise.reject('Please enter only letters and numbers');
+    }
+    return Promise.resolve();
+  };
+
   const onFinish = async (): Promise<any> => {
     try {
-        const response = await form.validateFields();
-      const { data } = await client.mutate({
+      const response = await form.validateFields();
+
+      const payload = {
+        first_name: response.firstName,
+        last_name: response.lastName,
+        phones: [
+          ...response.phones.map((item: { phone: string }) => ({
+            number: item.phone,
+          })),
+        ],
+      };
+
+      let variables;
+
+      if (record) {
+        variables = {
+          id: record.id,
+          _set: {
+            first_name: payload.first_name,
+            last_name: payload.last_name,
+          },
+        };
+      } else {
+        variables = payload;
+      }
+
+      const total = await client.query({
+        fetchPolicy: "no-cache",
         variables: {
-          first_name: response.firstName,
-          last_name: response.lastName,
-          phones: [
-            ...response.phones.map((item: {phone: string}) => ({
-              number: item.phone,
-            })),
-          ],
+          where: {
+            _and: [
+              { first_name: { _like: `%${payload.first_name}%` } },
+              { last_name: { _like: `%${payload.last_name}%` } },
+            ],
+          },
         },
-        mutation: ADD_CONTACT,
+        query: GET_TOTAL_CONTACTS,
       });
-        fetchData()
+
+      if (!!total.data.contact_aggregate.aggregate.count) {
+        notification.error({
+          message: "Nama yang anda pilih sudah digunakan",
+        });
+      } else {
+        const { data } = await client.mutate({
+          variables,
+          mutation: record ? EDIT_CONTACT : ADD_CONTACT,
+        });
+        setModalData({
+          record: null,
+          isOpen: false,
+        });
+        fetchData();
+      }
     } catch (err: any) {
       console.log(err);
       notification.error({
@@ -47,26 +116,25 @@ export const ModalForm = ({
     <Modal
       title={record ? "Edit Contact" : "Add Contact"}
       open={visible}
-          onOk={() => {
-                onFinish()
-              setModalData({
-                record: null,
-                isOpen: false,
-              })
-      }
-      }
-      onCancel={() =>
+      onOk={() => {
+        onFinish();
+      }}
+      onCancel={() => {
+        form.resetFields()
         setModalData({
           record: null,
           isOpen: false,
         })
+      }
       }
     >
       <Form form={form} initialValues={{ remember: true }} onFinish={onFinish}>
         <Form.Item
           label="First Name"
           name="firstName"
-          rules={[{ required: true, message: "Please input your first name!" }]}
+          rules={[{ required: true, message: "Please input your first name!" }, {
+            validator: validateInputName,
+          },]}
         >
           <Input />
         </Form.Item>
@@ -74,7 +142,9 @@ export const ModalForm = ({
         <Form.Item
           label="Last Name"
           name="lastName"
-          rules={[{ required: true, message: "Please input your last name!" }]}
+          rules={[{ required: true, message: "Please input your last name!" }, {
+            validator: validateInputName,
+          },]}
         >
           <Input />
         </Form.Item>
@@ -93,6 +163,9 @@ export const ModalForm = ({
                           {
                             required: index === 0,
                             message: "Please input your telephone number!",
+                          },
+                          {
+                            validator: validateNumber,
                           },
                         ]}
                       >

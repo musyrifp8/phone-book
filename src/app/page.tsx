@@ -57,12 +57,12 @@ export default function Home() {
   );
   const [pinned, setPinned] = useLocalStorage<Contact[]>(PINNED, []);
   const [modalData, setModalData] = useState<{
-    record: Contact | null,
-    isOpen: boolean
+    record: Contact | null;
+    isOpen: boolean;
   }>({
     record: null,
-    isOpen: false
-  })
+    isOpen: false,
+  });
 
   const columns: ColumnsType<any> = [
     {
@@ -82,10 +82,14 @@ export default function Home() {
       key: "name",
       render: (_, record: Contact) => {
         const name = `${record.first_name} ${record.last_name}`;
-        return <div>
-          <p><b>{name}</b></p>
-          <p style={{fontSize: '10px'}}>{ record.phones[0].number }</p>
-        </div>
+        return (
+          <div>
+            <p>
+              <b>{name}</b>
+            </p>
+            <p style={{ fontSize: "10px" }}>{record.phones[0].number}</p>
+          </div>
+        );
       },
     },
     {
@@ -111,7 +115,7 @@ export default function Home() {
     totalData: number;
   }> {
     const contacts = await client.query({
-      fetchPolicy: 'no-cache',
+      fetchPolicy: "no-cache",
       variables: {
         where: {
           _or: [
@@ -124,7 +128,7 @@ export default function Home() {
     });
 
     const total = await client.query({
-      fetchPolicy: 'no-cache',
+      fetchPolicy: "no-cache",
       variables: {
         where: {
           _or: [
@@ -148,7 +152,7 @@ export default function Home() {
   }
 
   const fetchData = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const data = await getData();
       if (!!!contacts.length) {
@@ -219,12 +223,11 @@ export default function Home() {
   }
 
   async function onDelete(record: Contact): Promise<void> {
-    
     const { data } = await client.mutate({
       variables: {
         id: record.id,
       },
-      
+
       mutation: DELETE_CONTACT,
     });
 
@@ -232,7 +235,7 @@ export default function Home() {
       notification.success({
         message: "Berhasil Menghapus Kontak",
       });
-      fetchData()
+      fetchData();
     }
   }
 
@@ -246,18 +249,19 @@ export default function Home() {
           color: "rgba(0, 0, 0, 0.45)",
         }}
       >
-        {!isLoading && (
-          <Input.Search
-            placeholder="Search by name"
-            value={filter}
-            onChange={(e) => {
-              setPagination({ currentPage: 1, offset: 0 });
-              setFilter(e.target.value);
-            }}
-            loading={isLoading}
-          />
-        )}
-        <UserAddOutlined onClick={() => setModalData({record: null, isOpen: true})} />
+        <Input.Search
+          placeholder="Search by name"
+          value={filter}
+          onChange={(e) => {
+            setPagination({ currentPage: 1, offset: 0 });
+            setFilter(e.target.value);
+          }}
+          loading={isLoading}
+        />
+
+        <UserAddOutlined
+          onClick={() => setModalData({ record: null, isOpen: true })}
+        />
       </div>
       {isLoading ? (
         <div>
@@ -279,6 +283,12 @@ export default function Home() {
                     onClickStar={() => onClickStar(record)}
                     key={record.id}
                     onDelete={() => onDelete(record)}
+                    onEdit={() =>
+                      setModalData({
+                        record: record,
+                        isOpen: true,
+                      })
+                    }
                   />
                 ),
                 rowExpandable: (record) => !!record,
@@ -305,6 +315,12 @@ export default function Home() {
                   onClickStar={() => onClickStar(record)}
                   key={record.id}
                   onDelete={() => onDelete(record)}
+                  onEdit={() =>
+                    setModalData({
+                      record: record,
+                      isOpen: true,
+                    })
+                  }
                 />
               ),
               rowExpandable: (record) => !!record,
@@ -319,9 +335,14 @@ export default function Home() {
             total={totalData}
             onChange={(page) => onPageChange(page)}
             style={{ margin: "10px 0px", float: "right" }}
-            />
-            
-            <ModalForm visible={modalData.isOpen} setModalData={setModalData} fetchData={fetchData} />
+          />
+
+          <ModalForm
+            visible={modalData.isOpen}
+            record={modalData.record}
+            setModalData={setModalData}
+            fetchData={fetchData}
+          />
         </div>
       )}
     </div>

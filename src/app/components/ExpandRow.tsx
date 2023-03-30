@@ -5,14 +5,14 @@ interface IExpandedRowProps {
     record: Contact;
     onClickStar: () => void
     onDelete: () => void
-    // onEdit: () => void
+    onEdit: () => void
   }
 
-export const ExpandedRow = ({ record, onClickStar, onDelete }: IExpandedRowProps) => {
+export const ExpandedRow = ({ record, onClickStar, onDelete, onEdit }: IExpandedRowProps) => {
     return (
       <div style={{ display: "flex", justifyContent: "space-evenly", gap: '10px' }}>
         <UserDeleteOutlined onClick={onDelete} style={{ color: 'red' }} />
-        <EditOutlined style={{ color: 'blue' }} />
+        <EditOutlined onClick={onEdit} style={{ color: 'blue' }} />
         {record.isFavorite ? (
           <StarFilled
             onClick={onClickStar}
