@@ -12,6 +12,7 @@ import { ColumnsType } from "antd/es/table";
 import useLocalStorage, { ILocalStorageItems } from "./hook/useLocalStorage";
 import { StarFilled, UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import { ExpandedRow } from "./components/ExpandRow";
+import { ModalForm } from "./components/ModalForm";
 
 const {
   CONTACTS,
@@ -55,6 +56,13 @@ export default function Home() {
     []
   );
   const [pinned, setPinned] = useLocalStorage<Contact[]>(PINNED, []);
+  const [modalData, setModalData] = useState<{
+    record: Contact | null,
+    isOpen: boolean
+  }>({
+    record: null,
+    isOpen: false
+  })
 
   const columns: ColumnsType<any> = [
     {
@@ -74,7 +82,10 @@ export default function Home() {
       key: "name",
       render: (_, record: Contact) => {
         const name = `${record.first_name} ${record.last_name}`;
-        return name;
+        return <div>
+          <p><b>{name}</b></p>
+          <p style={{fontSize: '10px'}}>{ record.phones[0].number }</p>
+        </div>
       },
     },
     {
@@ -100,6 +111,7 @@ export default function Home() {
     totalData: number;
   }> {
     const contacts = await client.query({
+      fetchPolicy: 'no-cache',
       variables: {
         where: {
           _or: [
@@ -112,6 +124,7 @@ export default function Home() {
     });
 
     const total = await client.query({
+      fetchPolicy: 'no-cache',
       variables: {
         where: {
           _or: [
@@ -206,26 +219,20 @@ export default function Home() {
   }
 
   async function onDelete(record: Contact): Promise<void> {
+    
     const { data } = await client.mutate({
       variables: {
         id: record.id,
       },
-      mutation: DELETE_CONTACT,
       
+      mutation: DELETE_CONTACT,
     });
 
     if (data.delete_contact_by_pk) {
       notification.success({
         message: "Berhasil Menghapus Kontak",
       });
-      
-      if (record.isFavorite) {
-        setPinned([...pinned.filter(item => item.id !== record.id)]) 
-      } else {
-        setSelectedContacts([...selectedContacts.filter(item => item.id !== record.id)])
-      }
-
-      setContacts([...contacts.filter(item => item.id !== record.id)])
+      fetchData()
     }
   }
 
@@ -250,7 +257,7 @@ export default function Home() {
             loading={isLoading}
           />
         )}
-        <UserAddOutlined />
+        <UserAddOutlined onClick={() => setModalData({record: null, isOpen: true})} />
       </div>
       {isLoading ? (
         <div>
@@ -312,7 +319,9 @@ export default function Home() {
             total={totalData}
             onChange={(page) => onPageChange(page)}
             style={{ margin: "10px 0px", float: "right" }}
-          />
+            />
+            
+            <ModalForm visible={modalData.isOpen} setModalData={setModalData} fetchData={fetchData} />
         </div>
       )}
     </div>
