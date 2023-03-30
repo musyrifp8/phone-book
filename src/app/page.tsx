@@ -2,16 +2,27 @@
 
 import { useEffect, useState } from "react";
 import client from "./graphql/apollo-client";
-import { GET_CONTACTS, GET_TOTAL_CONTACTS } from "./graphql/query";
-import { Table, Pagination, Spin, Input, Avatar } from "antd";
+import {
+  GET_CONTACTS,
+  GET_TOTAL_CONTACTS,
+  DELETE_CONTACT,
+} from "./graphql/query";
+import { Table, Pagination, Spin, Input, Avatar, notification } from "antd";
 import { ColumnsType } from "antd/es/table";
 import useLocalStorage, { ILocalStorageItems } from "./hook/useLocalStorage";
-import { StarFilled, StarOutlined, UserOutlined } from "@ant-design/icons";
+import { StarFilled, UserAddOutlined, UserOutlined } from "@ant-design/icons";
+import { ExpandedRow } from "./components/ExpandRow";
 
-const { CONTACTS, CURRENT_PAGE, TOTAL_DATA, FILTER, PINNED, SELECTED_CONTACTS } =
-  ILocalStorageItems;
+const {
+  CONTACTS,
+  CURRENT_PAGE,
+  TOTAL_DATA,
+  FILTER,
+  PINNED,
+  SELECTED_CONTACTS,
+} = ILocalStorageItems;
 
-interface Contact {
+export interface Contact {
   created_at: string;
   first_name: string;
   id: 2452;
@@ -22,9 +33,7 @@ interface Contact {
 
   //frontend only
   isFavorite: boolean;
-  color: string
-
-  
+  color: string;
 }
 
 interface IPagination {
@@ -41,22 +50,31 @@ export default function Home() {
   const [totalData, setTotalData] = useLocalStorage<number>(TOTAL_DATA, 0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filter, setFilter] = useLocalStorage<string>(FILTER, "");
-  const [selectedContacts, setSelectedContacts] = useLocalStorage<Contact[]>(SELECTED_CONTACTS ,[]);
+  const [selectedContacts, setSelectedContacts] = useLocalStorage<Contact[]>(
+    SELECTED_CONTACTS,
+    []
+  );
   const [pinned, setPinned] = useLocalStorage<Contact[]>(PINNED, []);
 
   const columns: ColumnsType<any> = [
     {
-      key: 'avatar',
+      key: "avatar",
       render: (_, record: Contact) => {
-        return <Avatar size={'default'} style={{backgroundColor: record.color}} icon={<UserOutlined  />} />
-      }
-  },
+        return (
+          <Avatar
+            size={"default"}
+            style={{ backgroundColor: record.color }}
+            icon={<UserOutlined />}
+          />
+        );
+      },
+    },
     {
       dataIndex: "name",
       key: "name",
       render: (_, record: Contact) => {
         const name = `${record.first_name} ${record.last_name}`;
-        return name
+        return name;
       },
     },
     {
@@ -112,64 +130,60 @@ export default function Home() {
   }
 
   async function onPageChange(page: number): Promise<void> {
-    // let tempOffset = pagination.offset;
-    // if (pagination.currentPage > page) {
-    //   tempOffset = tempOffset - 10;
-    // } else {
-    //   tempOffset = tempOffset + 10;
-    // }
-    let tempOffset = page * 10 -10
+    let tempOffset = page * 10 - 10;
     setPagination({ currentPage: page, offset: tempOffset });
   }
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const data = await getData();
-        if (!!!contacts.length) {
-          
-          const tempContact = data.contacts.map((item) => ({
-            ...item,
-            isFavorite: false,
-            color: `#${Math.floor(Math.random()*16777215).toString(16)}`
-          }));
-          setContacts(tempContact);
-          setSelectedContacts(tempContact);
-          setTotalData(tempContact.length);
-        } else {
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getData();
+      if (!!!contacts.length) {
+        const tempContact = data.contacts.map((item) => ({
+          ...item,
+          isFavorite: false,
+          color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+        }));
+        setContacts(tempContact);
+        setSelectedContacts(tempContact);
+        setTotalData(tempContact.length);
+      } else {
+        let tempContact = [...pinned];
+        let tempSelected: Contact[] = [];
 
-          let tempContact = [...pinned]
-          let tempSelected: Contact[] = []
+        data.contacts.forEach((item) => {
+          const isPinned = pinned.find((pinned) => pinned.id === item.id);
+          if (!isPinned) {
+            tempSelected.push({
+              ...item,
+              isFavorite: false,
+              color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+            });
+            tempContact = [...tempSelected];
+          }
+        });
 
-          data.contacts.forEach((item) => {
-            const isPinned = pinned.find(pinned => pinned.id === item.id)
-            if (!isPinned) {
-              tempSelected.push({ ...item, isFavorite: false, color: `#${Math.floor(Math.random()*16777215).toString(16)}` })
-              tempContact = [...tempSelected]
-            }
-          })
-
-          setContacts([...tempContact])
-          setSelectedContacts([...tempSelected])
-          setTotalData(tempSelected.length);
-        }
-      } catch (error) {
-        console.log(error);
+        setContacts([...tempContact]);
+        setSelectedContacts([...tempSelected]);
+        setTotalData(tempSelected.length);
       }
+    } catch (error) {
+      console.log(error);
+    }
+    setIsLoading(false);
+  };
 
-      setIsLoading(false);
-    };
-
-    init();
+  useEffect(() => {
+    fetchData();
   }, [filter]);
 
-  function onClickStar(record: Contact, isFavorite: boolean): void {
+  function onClickStar(record: Contact): void {
     let tempSelected = selectedContacts;
     let tempPinned = pinned;
-    if (!isFavorite) {
+    if (!record.isFavorite) {
       tempPinned.push({
         ...record,
-        isFavorite: !isFavorite,
+        isFavorite: !record.isFavorite,
       });
       setPinned([...tempPinned]);
       tempSelected = [...tempSelected.filter((item) => item.id !== record.id)];
@@ -177,32 +191,67 @@ export default function Home() {
     } else {
       tempSelected.push({
         ...record,
-        isFavorite: !isFavorite,
+        isFavorite: !record.isFavorite,
       });
       setSelectedContacts([...tempSelected]);
       setPinned([...pinned.filter((item) => item.id !== record.id)]);
-      
     }
     const tempContacts = contacts.map((item) => ({
       ...item,
-      isFavorite: item.id === record.id ? !isFavorite : item.isFavorite,
+      isFavorite: item.id === record.id ? !record.isFavorite : item.isFavorite,
     }));
 
     setContacts([...tempContacts]);
     setTotalData(tempSelected.length);
   }
 
+  async function onDelete(record: Contact): Promise<void> {
+    const { data } = await client.mutate({
+      variables: {
+        id: record.id,
+      },
+      mutation: DELETE_CONTACT,
+      
+    });
+
+    if (data.delete_contact_by_pk) {
+      notification.success({
+        message: "Berhasil Menghapus Kontak",
+      });
+      
+      if (record.isFavorite) {
+        setPinned([...pinned.filter(item => item.id !== record.id)]) 
+      } else {
+        setSelectedContacts([...selectedContacts.filter(item => item.id !== record.id)])
+      }
+
+      setContacts([...contacts.filter(item => item.id !== record.id)])
+    }
+  }
+
   return (
     <div style={{ padding: "10px" }}>
-      <Input.Search
-        placeholder="Search by name"
-        value={filter}
-        onChange={(e) => {
-          setPagination({currentPage: 1, offset: 0})
-          setFilter(e.target.value)}
-        }
-        loading={isLoading}
-      />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          color: "rgba(0, 0, 0, 0.45)",
+        }}
+      >
+        {!isLoading && (
+          <Input.Search
+            placeholder="Search by name"
+            value={filter}
+            onChange={(e) => {
+              setPagination({ currentPage: 1, offset: 0 });
+              setFilter(e.target.value);
+            }}
+            loading={isLoading}
+          />
+        )}
+        <UserAddOutlined />
+      </div>
       {isLoading ? (
         <div>
           <Spin spinning={isLoading} />
@@ -218,26 +267,15 @@ export default function Home() {
               dataSource={pinned}
               expandable={{
                 expandedRowRender: (record: Contact) => (
-                  <div style={{ display: "flex" }}>
-                    {record.isFavorite ? (
-                      <StarFilled
-                        onClick={() => onClickStar(record, record.isFavorite)}
-                        style={{
-                          color: "#fff220",
-                        }}
-                      />
-                    ) : (
-                      <StarOutlined
-                        onClick={() => onClickStar(record, record.isFavorite)}
-                        style={{
-                          color: "#fff220",
-                        }}
-                      />
-                    )}
-                  </div>
+                  <ExpandedRow
+                    record={record}
+                    onClickStar={() => onClickStar(record)}
+                    key={record.id}
+                    onDelete={() => onDelete(record)}
+                  />
                 ),
                 rowExpandable: (record) => !!record,
-                // expandIcon: () => null,
+                expandIcon: () => null,
                 expandIconColumnIndex: -1,
                 expandRowByClick: true,
               }}
@@ -249,29 +287,21 @@ export default function Home() {
             columns={columns}
             showHeader={false}
             pagination={false}
-              dataSource={selectedContacts.slice(pagination.offset, 10 + pagination.offset)}
+            dataSource={selectedContacts.slice(
+              pagination.offset,
+              10 + pagination.offset
+            )}
             expandable={{
               expandedRowRender: (record: Contact) => (
-                <div style={{ display: "flex" }}>
-                  {record.isFavorite ? (
-                    <StarFilled
-                      onClick={() => onClickStar(record, record.isFavorite)}
-                      style={{
-                        color: "#fff220",
-                      }}
-                    />
-                  ) : (
-                    <StarOutlined
-                      onClick={() => onClickStar(record, record.isFavorite)}
-                      style={{
-                        color: "#fff220",
-                      }}
-                    />
-                  )}
-                </div>
+                <ExpandedRow
+                  record={record}
+                  onClickStar={() => onClickStar(record)}
+                  key={record.id}
+                  onDelete={() => onDelete(record)}
+                />
               ),
               rowExpandable: (record) => !!record,
-              // expandIcon: () => null,
+              expandIcon: () => null,
               expandIconColumnIndex: -1,
               expandRowByClick: true,
             }}
