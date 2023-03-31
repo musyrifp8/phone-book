@@ -7,12 +7,13 @@ import {
   GET_TOTAL_CONTACTS,
   DELETE_CONTACT,
 } from "./graphql/query";
-import { Table, Pagination, Spin, Input, Avatar, notification } from "antd";
+import { Table, Spin, Input, notification } from "antd";
 import { ColumnsType } from "antd/es/table";
 import useLocalStorage, { ILocalStorageItems } from "./hook/useLocalStorage";
-import { StarFilled, UserAddOutlined, UserOutlined } from "@ant-design/icons";
+import { UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import { ExpandedRow } from "./components/ExpandRow";
 import { ModalForm } from "./components/ModalForm";
+import { StyledAvatar, StyledP, StyledPagination, StyledSpinContainer, StyledStarFilled, StyledTopBarContainer } from "./styled.page";
 
 const {
   CONTACTS,
@@ -69,9 +70,9 @@ export default function Home() {
       key: "avatar",
       render: (_, record: Contact) => {
         return (
-          <Avatar
+          <StyledAvatar
             size={"default"}
-            style={{ backgroundColor: record.color }}
+            customColor={record.color}
             icon={<UserOutlined />}
           />
         );
@@ -87,7 +88,7 @@ export default function Home() {
             <p>
               <b>{name}</b>
             </p>
-            <p style={{ fontSize: "10px" }}>{record.phones[0].number}</p>
+            <StyledP>{record.phones[0].number}</StyledP>
           </div>
         );
       },
@@ -99,11 +100,7 @@ export default function Home() {
       render: (_, record: Contact) => {
         return (
           record.isFavorite && (
-            <StarFilled
-              style={{
-                color: "#fff220",
-              }}
-            />
+            <StyledStarFilled />
           )
         );
       },
@@ -241,14 +238,7 @@ export default function Home() {
 
   return (
     <div style={{ padding: "10px" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          color: "rgba(0, 0, 0, 0.45)",
-        }}
-      >
+      <StyledTopBarContainer>
         <Input.Search
           placeholder="Search by name"
           value={filter}
@@ -262,11 +252,11 @@ export default function Home() {
         <UserAddOutlined
           onClick={() => setModalData({ record: null, isOpen: true })}
         />
-      </div>
+      </StyledTopBarContainer>
       {isLoading ? (
-        <div>
+        <StyledSpinContainer>
           <Spin spinning={isLoading} />
-        </div>
+        </StyledSpinContainer>
       ) : (
         <div>
           {!!pinned.length && pagination.currentPage === 1 && (
@@ -330,11 +320,10 @@ export default function Home() {
             }}
           />
 
-          <Pagination
+          <StyledPagination
             current={pagination.currentPage}
             total={totalData}
             onChange={(page) => onPageChange(page)}
-            style={{ margin: "10px 0px", float: "right" }}
           />
 
           <ModalForm

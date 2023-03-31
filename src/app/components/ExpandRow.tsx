@@ -1,5 +1,7 @@
 import { EditOutlined, StarFilled, StarOutlined, UserDeleteOutlined } from "@ant-design/icons";
 import { Contact } from "../page";
+import { StyledContainer, StyledStarOutlined } from "./styled.ExpandRow";
+import { StyledStarFilled } from "../styled.page";
 
 interface IExpandedRowProps {
     record: Contact;
@@ -10,24 +12,18 @@ interface IExpandedRowProps {
 
 export const ExpandedRow = ({ record, onClickStar, onDelete, onEdit }: IExpandedRowProps) => {
     return (
-      <div style={{ display: "flex", justifyContent: "space-evenly", gap: '10px' }}>
+      <StyledContainer>
         <UserDeleteOutlined onClick={onDelete} style={{ color: 'red' }} />
         <EditOutlined onClick={onEdit} style={{ color: 'blue' }} />
         {record.isFavorite ? (
-          <StarFilled
+          <StyledStarFilled
             onClick={onClickStar}
-            style={{
-              color: "#fff220",
-            }}
           />
         ) : (
-          <StarOutlined
+          <StyledStarOutlined
             onClick={onClickStar}
-            style={{
-              color: "#fff220",
-            }}
           />
         )}
-      </div>
+      </StyledContainer>
     );
   };
