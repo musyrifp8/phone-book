@@ -6,8 +6,8 @@ export const StyledP = styled.p`
   font-size: 10px;
 `;
 
-export const StyledAvatar = styled(Avatar)<{ customColor: string }>`
-  background-color: ${(props) => props.customColor};
+export const StyledAvatar = styled(Avatar)<{ customcolor: string }>`
+  background-color: ${(props) => props.customcolor};
 `;
 
 export const StyledStarFilled = styled(StarFilled)`

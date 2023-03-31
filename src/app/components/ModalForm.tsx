@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button, Col, Form, Input, Modal, Row, notification } from "antd";
 import { Contact } from "../page";
 import { CloseOutlined, PlusCircleOutlined } from "@ant-design/icons";
@@ -24,13 +25,15 @@ export const ModalForm = ({
 }: IModalFormProps) => {
   const [form] = Form.useForm();
 
-  if (record) {
-    form.setFieldsValue({
-      firstName: record.first_name,
-      lastName: record.last_name,
-      phones: record.phones.map((item) => ({ phone: item.number })),
-    });
-  }
+  useEffect(() => {
+    if (record) {
+      form.setFieldsValue({
+        firstName: record.first_name,
+        lastName: record.last_name,
+        phones: record.phones.map((item) => ({ phone: item.number })),
+      });
+    }
+  }, [record])
 
   const validateNumber = (_: RuleObject, value: string): Promise<void> => {
     const regex = /^[0-9]*$/;
@@ -119,6 +122,7 @@ export const ModalForm = ({
       onOk={() => {
         onFinish();
       }}
+      okText={'Simpan'}
       onCancel={() => {
         form.resetFields()
         setModalData({
@@ -128,7 +132,7 @@ export const ModalForm = ({
       }
       }
     >
-      <Form form={form} initialValues={{ remember: true }} onFinish={onFinish}>
+      <Form form={form} onFinish={onFinish}>
         <Form.Item
           label="First Name"
           name="firstName"
@@ -153,8 +157,7 @@ export const ModalForm = ({
           {(fields, { add, remove }, { errors }) => (
             <>
               {fields.map((field, index) => (
-                <>
-                  <Row align="top">
+                  <Row key={index} align="top">
                     <Col span={22}>
                       <Form.Item
                         label={`Nomor Telephone ${index + 1}`}
@@ -183,7 +186,6 @@ export const ModalForm = ({
                       </Col>
                     )}
                   </Row>
-                </>
               ))}
 
               <Row>

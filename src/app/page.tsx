@@ -72,7 +72,7 @@ export default function Home() {
         return (
           <StyledAvatar
             size={"default"}
-            customColor={record.color}
+            customcolor={record.color}
             icon={<UserOutlined />}
           />
         );
