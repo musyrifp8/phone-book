@@ -14,6 +14,13 @@
   margin: 0;
   top: 0;
 }
-.ant-modal-body {
-  height: calc(100vh - 110px);
+
+@media only screen and (min-width: 440px) {
+  .ant-modal,
+  .ant-modal-content {
+    width: 440px;
+    margin: auto;
+    top: 30px;
+    height: fit-content;
+  }
 }
